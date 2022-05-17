@@ -1,25 +1,26 @@
-/* Instruction : List of municipalities where the number of sales increased by at least 20% between the first and second quarters of 2020 */
+/* Instruction : List of municipalities with the department where the number of sales increased by at least 20% between the first and second quarters of 2020 */
 
 with
 ventet1 AS (
 /* filtered by the name of municipalities and count dates of transactions */
-select adresse.commune, count(transaction.date_mutation) AS nb_ventes_t1
+select adresse.commune, adresse.code_departement, count(transaction.date_mutation) AS nb_ventes_t1
 from adresse inner JOIN bien_immobilier ON adresse.id_adresse = bien_immobilier.id_adresse
 inner JOIN transaction ON bien_immobilier.id_bien = transaction.id_bien
 /* join */
 where transaction.date_mutation<'2020-04-01' and transaction.valeur_fonciere is not null
-group by adresse.commune),
+group by adresse.commune, adresse.code_departement),
 /* ordered by date and adress */
 
 ventet2 AS (
 /* reciprocal of ventet1 for the second quarter of 2020 */
-select adresse.commune, count(transaction.date_mutation) AS nb_ventes_t2
+select adresse.commune, adresse.code_departement, count(transaction.date_mutation) AS nb_ventes_t2
 from adresse inner JOIN bien_immobilier ON adresse.id_adresse = bien_immobilier.id_adresse
 inner JOIN transaction ON bien_immobilier.id_bien = transaction.id_bien
 where date_mutation>='2020-04-01' and transaction.valeur_fonciere is not null
-group by adresse.commune)
+group by adresse.commune, adresse.code_departement)
 
-select ventet1.commune, ventet1.nb_ventes_t1, ventet2.nb_ventes_t2, (((nb_ventes_t2-nb_ventes_t1)*100/(nb_ventes_t1))) AS tx_evo_sup20_t1_t2
+select ventet1.commune, ventet1.code_departement, ventet1.nb_ventes_t1, ventet2.nb_ventes_t2, (((nb_ventes_t2-nb_ventes_t1)*100/(nb_ventes_t1))) AS tx_evo_sup20_t1_t2
 from ventet1 join ventet2 on ventet1.commune = ventet2.commune
 having tx_evo_sup20_t1_t2>=20
-order by tx_evo_sup20_t1_t2 desc;
+order by ventet1.code_departement, tx_evo_sup20_t1_t2 desc;
+/* final table which could be export in MySQL on a CSV file for the marketing department of a real estate agency */
