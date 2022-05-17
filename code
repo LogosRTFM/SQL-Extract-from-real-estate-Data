@@ -1,0 +1,23 @@
+/* Instruction : List of municipalities where the number of sales increased by at least 20% between the first and second quarters of 2020 */
+with
+/* filtered by the name of municipalities and count dates of transactions */
+ventet1 AS (
+select adresse.commune, count(transaction.date_mutation) AS nb_ventes_t1
+/* join */
+from adresse inner JOIN bien_immobilier ON adresse.id_adresse = bien_immobilier.id_adresse
+inner JOIN transaction ON bien_immobilier.id_bien = transaction.id_bien
+/* ordered by date and adress */
+where transaction.date_mutation<'2020-04-01' and transaction.valeur_fonciere is not null
+group by adresse.commune),
+
+ventet2 AS (
+select adresse.commune, count(transaction.date_mutation) AS nb_ventes_t2
+from adresse inner JOIN bien_immobilier ON adresse.id_adresse = bien_immobilier.id_adresse
+inner JOIN transaction ON bien_immobilier.id_bien = transaction.id_bien
+where date_mutation>='2020-04-01' and transaction.valeur_fonciere is not null
+group by adresse.commune)
+
+select ventet1.commune, ventet1.nb_ventes_t1, ventet2.nb_ventes_t2, (((nb_ventes_t2-nb_ventes_t1)*100/(nb_ventes_t1))) AS tx_evo_sup20_t1_t2
+from ventet1 join ventet2 on ventet1.commune = ventet2.commune
+having tx_evo_sup20_t1_t2>=20
+order by tx_evo_sup20_t1_t2 desc;
